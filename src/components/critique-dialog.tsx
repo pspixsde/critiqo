@@ -23,31 +23,37 @@ import {
   type CritiqueRatings,
   type CritiqueDimension,
 } from "@/lib/types";
+import { getErrorMessage } from "@/lib/utils";
 import { Film, Trash2 } from "lucide-react";
 
 interface CritiqueDialogProps {
   movie: TMDBMovie | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mediaType?: "movie" | "tv";
 }
 
-export function CritiqueDialog({ movie, open, onOpenChange }: CritiqueDialogProps) {
+export function CritiqueDialog({ movie, open, onOpenChange, mediaType = "movie" }: CritiqueDialogProps) {
   const { saveCritique, deleteCritique, getCritique } = useCritiques();
   const [ratings, setRatings] = useState<CritiqueRatings>(getEmptyRatings());
   const [isEditing, setIsEditing] = useState(false);
+  const [existingCreatedAt, setExistingCreatedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (movie && open) {
-      const existing = getCritique(movie.id);
-      if (existing) {
-        setRatings(existing.ratings);
-        setIsEditing(true);
-      } else {
-        setRatings(getEmptyRatings());
-        setIsEditing(false);
-      }
+      getCritique(movie.id, mediaType).then((existing) => {
+        if (existing) {
+          setRatings(existing.ratings);
+          setIsEditing(true);
+          setExistingCreatedAt(existing.createdAt);
+        } else {
+          setRatings(getEmptyRatings());
+          setIsEditing(false);
+          setExistingCreatedAt(null);
+        }
+      });
     }
-  }, [movie, open, getCritique]);
+  }, [movie, open, getCritique, mediaType]);
 
   if (!movie) return null;
 
@@ -55,33 +61,48 @@ export function CritiqueDialog({ movie, open, onOpenChange }: CritiqueDialogProp
   const allRated = Object.values(ratings).every((v) => v > 0);
   const src = posterUrl(movie.poster_path, "w342");
   const year = movie.release_date ? movie.release_date.split("-")[0] : "";
-  const genres = getGenreNames(movie.genre_ids);
+  const genres = getGenreNames(movie.genre_ids, mediaType);
 
   function handleSetRating(dimension: CritiqueDimension, value: number) {
     setRatings((prev) => ({ ...prev, [dimension]: value }));
   }
 
-  function handleSave() {
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave() {
     if (!allRated || !movie) return;
+    setError(null);
     const now = new Date().toISOString();
-    saveCritique({
-      movieId: movie.id,
-      title: movie.title,
-      posterPath: movie.poster_path,
-      releaseYear: year,
-      genres,
-      ratings,
-      score,
-      createdAt: isEditing ? getCritique(movie.id)!.createdAt : now,
-      updatedAt: now,
-    });
-    onOpenChange(false);
+    try {
+      await saveCritique({
+        movieId: movie.id,
+        mediaType,
+        title: movie.title,
+        posterPath: movie.poster_path,
+        releaseYear: year,
+        genres,
+        ratings,
+        score,
+        createdAt: existingCreatedAt ?? now,
+        updatedAt: now,
+      });
+      onOpenChange(false);
+    } catch (e) {
+      console.error("Failed to save critique:", e);
+      setError(getErrorMessage(e));
+    }
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!movie) return;
-    deleteCritique(movie.id);
-    onOpenChange(false);
+    setError(null);
+    try {
+      await deleteCritique(movie.id, mediaType);
+      onOpenChange(false);
+    } catch (e) {
+      console.error("Failed to delete critique:", e);
+      setError(getErrorMessage(e));
+    }
   }
 
   return (
@@ -137,7 +158,11 @@ export function CritiqueDialog({ movie, open, onOpenChange }: CritiqueDialogProp
 
         <Separator />
 
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex flex-col gap-2 px-6 py-4">
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+          <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {allRated ? (
               <>
@@ -168,6 +193,7 @@ export function CritiqueDialog({ movie, open, onOpenChange }: CritiqueDialogProp
             >
               {isEditing ? "Update" : "Save"} Critique
             </Button>
+          </div>
           </div>
         </div>
       </DialogContent>

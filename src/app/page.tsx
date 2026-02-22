@@ -1,4 +1,5 @@
-import { MovieSearch } from "@/components/movie-search";
+import { SearchWidget } from "@/components/search-widget";
+import { NowPlayingCarousel } from "@/components/now-playing-carousel";
 
 export default function HomePage() {
   return (
@@ -8,10 +9,16 @@ export default function HomePage() {
           Discover &amp; Critique
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Search for a movie and rate it across five dimensions
+          Search for movies &amp; TV shows and rate them across five dimensions
         </p>
       </div>
-      <MovieSearch />
+
+      <SearchWidget />
+
+      <section className="mt-12">
+        <h2 className="mb-4 text-lg font-semibold">Now Playing</h2>
+        <NowPlayingCarousel />
+      </section>
     </main>
   );
 }

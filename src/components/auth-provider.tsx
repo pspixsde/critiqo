@@ -1,0 +1,156 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
+import type { User, Session, Provider, AuthChangeEvent } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
+
+interface AuthContextValue {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signInWithOAuth: (provider: Provider) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+function getSupabaseClient() {
+  try {
+    return createClient();
+  } catch {
+    return null;
+  }
+}
+
+async function ensureProfile(
+  supabase: NonNullable<ReturnType<typeof getSupabaseClient>>,
+  user: User
+) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!data) {
+    await supabase.from("profiles").upsert({
+      id: user.id,
+      username:
+        user.user_metadata?.username ??
+        user.email?.split("@")[0] ??
+        "user",
+    });
+  }
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    async function init() {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUser = sessionData.session?.user ?? null;
+      setSession(sessionData.session);
+      setUser(currentUser);
+      if (currentUser) await ensureProfile(supabase, currentUser);
+      setLoading(false);
+
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        async (_event: AuthChangeEvent, newSession: Session | null) => {
+          setSession(newSession);
+          const u = newSession?.user ?? null;
+          setUser(u);
+          if (u) await ensureProfile(supabase, u);
+          setLoading(false);
+        }
+      );
+      subscription = authListener.subscription;
+    }
+
+    init();
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  const signUp = useCallback(
+    async (email: string, password: string, username: string) => {
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error("Supabase not configured");
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { username } },
+      });
+      if (error) throw error;
+    },
+    []
+  );
+
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error("Supabase not configured");
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+    },
+    []
+  );
+
+  const signInWithOAuth = useCallback(
+    async (provider: Provider) => {
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error("Supabase not configured");
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) throw error;
+    },
+    []
+  );
+
+  const signOut = useCallback(async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) throw new Error("Supabase not configured");
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{ user, session, loading, signUp, signIn, signInWithOAuth, signOut }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+}
