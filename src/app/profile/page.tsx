@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -8,13 +9,22 @@ import { MovieCard } from "@/components/movie-card";
 import { ScoreBadge } from "@/components/score-badge";
 import { CritiqueDialog } from "@/components/critique-dialog";
 import { useCritiques } from "@/hooks/use-critiques";
+import { useAuth } from "@/components/auth-provider";
 import { CRITIQUE_DIMENSIONS, type TMDBMovie, type CritiqueDimension } from "@/lib/types";
 import { BarChart3, Film, Trophy, TrendingDown } from "lucide-react";
 
 export default function ProfilePage() {
   const { critiques } = useCritiques();
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [selectedMovie, setSelectedMovie] = useState<TMDBMovie | null>(null);
+  const [selectedMediaType, setSelectedMediaType] = useState<"movie" | "tv">("movie");
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  if (!loading && !user) {
+    router.push("/auth");
+    return null;
+  }
 
   const stats = useMemo(() => {
     if (critiques.length === 0) return null;
@@ -47,6 +57,9 @@ export default function ProfilePage() {
     return { avgScore, dimensionAverages, highest, lowest, topGenres };
   }, [critiques]);
 
+  const displayName =
+    user?.user_metadata?.username ?? user?.email?.split("@")[0] ?? "Critic";
+
   function handleMovieClick(critique: (typeof critiques)[0]) {
     const movie: TMDBMovie = {
       id: critique.movieId,
@@ -61,6 +74,7 @@ export default function ProfilePage() {
       popularity: 0,
     };
     setSelectedMovie(movie);
+    setSelectedMediaType(critique.mediaType ?? "movie");
     setDialogOpen(true);
   }
 
@@ -69,13 +83,13 @@ export default function ProfilePage() {
       <div className="flex items-center gap-4 mb-8">
         <Avatar className="h-16 w-16">
           <AvatarFallback className="bg-amber-500/15 text-amber-500 text-xl font-bold">
-            FC
+            {displayName[0]?.toUpperCase() ?? "C"}
           </AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Film Critic</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
           <p className="text-sm text-muted-foreground">
-            {critiques.length} {critiques.length === 1 ? "movie" : "movies"} critiqued
+            {critiques.length} {critiques.length === 1 ? "title" : "titles"} critiqued
             {stats && <> &middot; Avg score: {stats.avgScore}/100</>}
           </p>
         </div>
@@ -84,7 +98,7 @@ export default function ProfilePage() {
       {critiques.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-20">
           <Film className="h-10 w-10 text-muted-foreground/40" />
-          <p className="text-muted-foreground">No critiques yet. Go rate some movies!</p>
+          <p className="text-muted-foreground">No critiques yet. Go rate some movies & shows!</p>
         </div>
       ) : (
         <div className="flex flex-col gap-8">
@@ -159,7 +173,7 @@ export default function ProfilePage() {
                         <div key={genre} className="flex items-center justify-between">
                           <span className="text-sm">{genre}</span>
                           <span className="text-xs tabular-nums text-muted-foreground">
-                            {count} {count === 1 ? "film" : "films"}
+                            {count} {count === 1 ? "title" : "titles"}
                           </span>
                         </div>
                       ))}
@@ -177,7 +191,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {critiques.map((critique) => (
                 <MovieCard
-                  key={critique.movieId}
+                  key={`${critique.mediaType ?? "movie"}-${critique.movieId}`}
                   movieId={critique.movieId}
                   title={critique.title}
                   posterPath={critique.posterPath}
@@ -195,6 +209,7 @@ export default function ProfilePage() {
         movie={selectedMovie}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        mediaType={selectedMediaType}
       />
     </main>
   );

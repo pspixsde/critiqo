@@ -12,6 +12,7 @@ export type CritiqueRatings = Record<CritiqueDimension, number>;
 
 export interface Critique {
   movieId: number;
+  mediaType: "movie" | "tv";
   title: string;
   posterPath: string | null;
   releaseYear: string;
@@ -21,6 +22,8 @@ export interface Critique {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── TMDB Movie Types ────────────────────────────────────────
 
 export interface TMDBMovie {
   id: number;
@@ -51,6 +54,55 @@ export interface TMDBSearchResponse {
   total_results: number;
 }
 
+// ─── TMDB TV Types ───────────────────────────────────────────
+
+export interface TMDBTVShow {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  first_air_date: string;
+  genre_ids: number[];
+  vote_average: number;
+  vote_count: number;
+  popularity: number;
+  origin_country: string[];
+}
+
+export interface TMDBTVDetails extends Omit<TMDBTVShow, "genre_ids"> {
+  genres: { id: number; name: string }[];
+  number_of_seasons: number;
+  number_of_episodes: number;
+  tagline: string | null;
+  status: string;
+  created_by: { id: number; name: string; profile_path: string | null }[];
+  seasons: {
+    id: number;
+    name: string;
+    season_number: number;
+    episode_count: number;
+    poster_path: string | null;
+    air_date: string | null;
+  }[];
+}
+
+// ─── TMDB Multi-Search Types ─────────────────────────────────
+
+export type TMDBMultiSearchResult =
+  | (TMDBMovie & { media_type: "movie" })
+  | (TMDBTVShow & { media_type: "tv" })
+  | { media_type: "person"; id: number; name: string; [key: string]: unknown };
+
+export interface TMDBMultiSearchResponse {
+  page: number;
+  results: TMDBMultiSearchResult[];
+  total_pages: number;
+  total_results: number;
+}
+
+// ─── TMDB Credits ────────────────────────────────────────────
+
 export interface TMDBCredits {
   id: number;
   cast: {
@@ -68,6 +120,56 @@ export interface TMDBCredits {
     profile_path: string | null;
   }[];
 }
+
+// ─── Unified Media Item ──────────────────────────────────────
+
+export interface MediaItem {
+  id: number;
+  mediaType: "movie" | "tv";
+  title: string;
+  overview: string;
+  posterPath: string | null;
+  backdropPath: string | null;
+  releaseDate: string;
+  genreIds: number[];
+  voteAverage: number;
+  voteCount: number;
+  popularity: number;
+}
+
+export function toMediaItem(result: TMDBMultiSearchResult): MediaItem | null {
+  if (result.media_type === "person") return null;
+  if (result.media_type === "movie") {
+    return {
+      id: result.id,
+      mediaType: "movie",
+      title: result.title,
+      overview: result.overview,
+      posterPath: result.poster_path,
+      backdropPath: result.backdrop_path,
+      releaseDate: result.release_date,
+      genreIds: result.genre_ids,
+      voteAverage: result.vote_average,
+      voteCount: result.vote_count,
+      popularity: result.popularity,
+    };
+  }
+  return {
+    id: result.id,
+    mediaType: "tv",
+    title: result.name,
+    overview: result.overview,
+    posterPath: result.poster_path,
+    backdropPath: result.backdrop_path,
+    releaseDate: result.first_air_date,
+    genreIds: result.genre_ids,
+    voteAverage: result.vote_average,
+    voteCount: result.vote_count,
+    popularity: result.popularity,
+  };
+}
+
+// ─── Genre Maps ──────────────────────────────────────────────
 
 export const TMDB_GENRE_MAP: Record<number, string> = {
   28: "Action",
@@ -91,9 +193,54 @@ export const TMDB_GENRE_MAP: Record<number, string> = {
   37: "Western",
 };
 
-export function getGenreNames(genreIds: number[]): string[] {
-  return genreIds.map((id) => TMDB_GENRE_MAP[id]).filter(Boolean);
+export const TMDB_TV_GENRE_MAP: Record<number, string> = {
+  10759: "Action & Adventure",
+  16: "Animation",
+  35: "Comedy",
+  80: "Crime",
+  99: "Documentary",
+  18: "Drama",
+  10751: "Family",
+  10762: "Kids",
+  9648: "Mystery",
+  10763: "News",
+  10764: "Reality",
+  10765: "Sci-Fi & Fantasy",
+  10766: "Soap",
+  10767: "Talk",
+  10768: "War & Politics",
+  37: "Western",
+};
+
+export function getGenreNames(genreIds: number[], mediaType: "movie" | "tv" = "movie"): string[] {
+  const map = mediaType === "tv" ? { ...TMDB_GENRE_MAP, ...TMDB_TV_GENRE_MAP } : TMDB_GENRE_MAP;
+  return genreIds.map((id) => map[id]).filter(Boolean);
 }
+
+// ─── Review Types ────────────────────────────────────────────
+
+export type ReviewSentiment = "positive" | "neutral" | "negative";
+
+export interface Review {
+  id: string;
+  userId: string;
+  username: string;
+  avatarUrl: string | null;
+  mediaId: number;
+  mediaType: "movie" | "tv";
+  content: string;
+  sentiment: ReviewSentiment;
+  helpfulCount: number;
+  unhelpfulCount: number;
+  userVote: 1 | -1 | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ReviewFilter = "all" | "positive" | "neutral" | "negative";
+export type ReviewSort = "rating" | "recent";
+
+// ─── Score Utilities ─────────────────────────────────────────
 
 export function computeScore(ratings: CritiqueRatings): number {
   const sum = Object.values(ratings).reduce((a, b) => a + b, 0);

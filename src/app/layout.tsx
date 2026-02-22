@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Navbar } from "@/components/navbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +16,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Critiqo — Rate Movies Like a Critic",
-  description: "A personal film cataloging and multi-dimensional rating platform.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  title: "Critiqo — Rate Movies & TV Like a Critic",
+  description:
+    "Rate movies and TV shows across five dimensions. Track, review, and share your critiques.",
+  openGraph: {
+    title: "Critiqo — Rate Movies & TV Like a Critic",
+    description:
+      "Rate movies and TV shows across five dimensions. Track, review, and share your critiques.",
+    siteName: "Critiqo",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Critiqo — Rate Movies & TV Like a Critic",
+    description:
+      "Rate movies and TV shows across five dimensions. Track, review, and share your critiques.",
+  },
 };
 
 export default function RootLayout({
@@ -29,10 +45,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
       >
-        <TooltipProvider>
-          <Navbar />
-          {children}
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Navbar />
+            {children}
+          </TooltipProvider>
+        </AuthProvider>
       </body>
     </html>
   );
