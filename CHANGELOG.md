@@ -2,6 +2,37 @@
 
 All notable changes to Critiqo will be documented in this file.
 
+## v0.4.0 — 2026-02-27
+
+### Added
+
+- New `Lists` page at `/lists` with left navigation for `Watchlist`, `Uninterested`, and user-created custom lists
+- Full custom list system backed by Supabase (`custom_lists`, `custom_list_items`) including create, rename, delete, and per-list item management
+- `Add to List` control on media detail pages so titles can be added/removed from custom lists without leaving the page
+- New `Account` page at `/account` with left navigation for `Edit Profile` and `Settings`
+- Edit Profile flow with avatar image support, visible name editing, locked username field, and save action
+- Settings flow with account privacy toggle (`profiles.is_private`) to hide user stats when private
+- Top rated people carousel on profile page with toggles for `Actors`/`Directors` and `Most Rated`/`Highest Rating`
+- TMDB genres reference document at `docs/tmdb-genres.md` for both movie and TV genre IDs/names
+- Supabase migration `003_v040_custom_lists.sql` for custom lists and privacy settings
+
+### Changed
+
+- Navbar user actions were consolidated into a top-right avatar hover menu with `Profile`, `Lists`, `Settings`, and `Log Out`
+- Explore cards no longer show movie/TV media-type indicator badges
+- Explore card quick-action UI was redesigned with larger square bookmark and quick-rating controls
+- Profile page now focuses on critiques and analytics, with list management moved to `/lists`
+- Profile name editing was moved from inline profile fields to the dedicated account editing flow
+- Search year formatting now uses shared media-year formatting logic across both full search and navbar search widget
+- Rating distribution pie chart palette was updated to a more subdued, theme-consistent set of colors
+
+### Fixed
+
+- Supabase session refresh reliability when returning to idle tabs by forcing auth user verification in middleware and auth provider flow
+- Stale auth/session edge cases by using `getUser()` validation and visibility-based revalidation in the auth provider
+- Search TV year display now avoids showing `- ...` for shows without a known end date in multi-search payloads
+- Pie chart tooltip contrast on dark backgrounds by setting a readable tooltip text color
+
 ## v0.3.0 — 2026-02-27
 
 ### Added
