@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createClient } from "@/lib/supabase/client";
 
@@ -13,15 +13,13 @@ interface WatchlistItem {
 }
 
 export function useWatchlist() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    if (!user) {
-      setItems([]);
-      return;
-    }
+    if (loading) return;
+    if (!user) return;
     let cancelled = false;
 
     async function load() {
@@ -54,12 +52,14 @@ export function useWatchlist() {
     return () => {
       cancelled = true;
     };
-  }, [user, version]);
+  }, [user, version, loading]);
+
+  const effectiveItems = useMemo(() => (!user || loading ? [] : items), [user, loading, items]);
 
   const isInWatchlist = useCallback(
     (mediaId: number, mediaType: "movie" | "tv" = "movie") =>
-      items.some((i) => i.mediaId === mediaId && i.mediaType === mediaType),
-    [items]
+      effectiveItems.some((i) => i.mediaId === mediaId && i.mediaType === mediaType),
+    [effectiveItems]
   );
 
   const addToWatchlist = useCallback(
@@ -104,5 +104,5 @@ export function useWatchlist() {
     [user]
   );
 
-  return { watchlist: items, isInWatchlist, addToWatchlist, removeFromWatchlist };
+  return { watchlist: effectiveItems, isInWatchlist, addToWatchlist, removeFromWatchlist };
 }

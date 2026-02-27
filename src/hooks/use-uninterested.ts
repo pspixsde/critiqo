@@ -1,26 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createClient } from "@/lib/supabase/client";
 
 export function useUninterested() {
-  const { user } = useAuth();
-  const [ids, setIds] = useState<Set<string>>(new Set());
+  const { user, loading } = useAuth();
+  const [items, setItems] = useState<
+    { mediaId: number; mediaType: "movie" | "tv"; title: string; posterPath: string | null; createdAt: string }[]
+  >([]);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
-    if (!user) {
-      setIds(new Set());
-      return;
-    }
+    if (loading) return;
+    if (!user) return;
     let cancelled = false;
 
     async function load() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("uninterested")
-        .select("media_id, media_type")
+        .select("media_id, media_type, title, poster_path, created_at")
         .eq("user_id", user!.id);
 
       if (error) {
@@ -29,12 +29,14 @@ export function useUninterested() {
       }
 
       if (!cancelled && data) {
-        setIds(
-          new Set(
-            (data as { media_id: number; media_type: string }[]).map(
-              (r) => `${r.media_type}-${r.media_id}`
-            )
-          )
+        setItems(
+          (data as Record<string, unknown>[]).map((r) => ({
+            mediaId: r.media_id as number,
+            mediaType: r.media_type as "movie" | "tv",
+            title: (r.title as string) ?? "Unknown",
+            posterPath: (r.poster_path as string | null) ?? null,
+            createdAt: r.created_at as string,
+          }))
         );
       }
     }
@@ -43,16 +45,23 @@ export function useUninterested() {
     return () => {
       cancelled = true;
     };
-  }, [user, version]);
+  }, [user, version, loading]);
+
+  const effectiveItems = useMemo(() => (!user || loading ? [] : items), [user, loading, items]);
 
   const isUninterested = useCallback(
     (mediaId: number, mediaType: "movie" | "tv" = "movie") =>
-      ids.has(`${mediaType}-${mediaId}`),
-    [ids]
+      effectiveItems.some((i) => i.mediaId === mediaId && i.mediaType === mediaType),
+    [effectiveItems]
   );
 
   const markUninterested = useCallback(
-    async (mediaId: number, mediaType: "movie" | "tv" = "movie") => {
+    async (
+      mediaId: number,
+      mediaType: "movie" | "tv" = "movie",
+      title?: string,
+      posterPath?: string | null
+    ) => {
       if (!user) return;
       const supabase = createClient();
       const { error } = await supabase.from("uninterested").upsert(
@@ -60,6 +69,8 @@ export function useUninterested() {
           user_id: user.id,
           media_id: mediaId,
           media_type: mediaType,
+          title: title ?? null,
+          poster_path: posterPath ?? null,
         },
         { onConflict: "user_id,media_id,media_type" }
       );
@@ -91,5 +102,5 @@ export function useUninterested() {
     [user]
   );
 
-  return { isUninterested, markUninterested, removeUninterested };
+  return { uninterested: effectiveItems, isUninterested, markUninterested, removeUninterested };
 }

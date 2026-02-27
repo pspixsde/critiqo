@@ -2,6 +2,35 @@
 
 All notable changes to Critiqo will be documented in this file.
 
+## v0.3.0 — 2026-02-27
+
+### Added
+
+- Explore-focused home layout with two new personalized carousels: `Your Next Watch` (recommendations) and `Similar to <last high-rated movie>`
+- Inline hover actions on carousel cards for quick watchlist toggling and quick rating updates
+- TV seasons and episodes section with expandable season details and per-episode name/date listing
+- Profile analytics charts: critique trend line chart (latest 30 with slider) and rating distribution pie chart (0-100 buckets)
+- Profile tabs for `Your Critiques`, `Watchlist`, and `Uninterested`
+- Display name support (`Name`) for user-facing identity, plus migration support in Supabase profiles
+- Toast notifications for watchlist and uninterested add/remove actions
+- Route loading screens for profile, movie, and TV pages
+
+### Changed
+
+- Main page title changed to `Explore` and search moved to the navbar so it is always accessible
+- Search nav item replaced by embedded navbar search with mobile toggle behavior
+- OAuth options restricted to Google and Facebook
+- TV year display now uses range formatting (e.g. `2013 - 2022`, `2013 - ...`)
+- Cast section upgraded with horizontal arrow navigation; directors are now shown in a dedicated section separate from crew
+- Profile critiques view changed from poster grid to recent detailed list with `Load More` and direct navigation to media detail pages
+- Star rating now supports deselecting to zero; critiques can be saved with a total score of 0
+- Uninterested button style improved for clearer active-state visibility
+
+### Fixed
+
+- Hover scale bleed on carousel cards by removing parent group-triggered hover coupling
+- Auth timing edge cases causing empty profile/media actions on first render by improving loading-aware data hooks and action rendering
+
 ## v0.2.0 — 2026-02-22
 
 ### Added

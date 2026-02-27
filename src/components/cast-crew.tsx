@@ -2,9 +2,9 @@ import Image from "next/image";
 import { profileUrl } from "@/lib/tmdb";
 import { User } from "lucide-react";
 import type { TMDBCredits } from "@/lib/types";
+import { HorizontalScroll } from "./horizontal-scroll";
 
 const CREW_JOBS = [
-  "Director",
   "Producer",
   "Executive Producer",
   "Writer",
@@ -29,6 +29,7 @@ interface CastCrewProps {
 
 export function CastCrew({ credits }: CastCrewProps) {
   const topCast = credits.cast.slice(0, 15);
+  const directors = credits.crew.filter((c) => c.job === "Director");
   const filteredCrew = credits.crew.filter((c) =>
     (CREW_JOBS as readonly string[]).includes(c.job)
   );
@@ -50,7 +51,7 @@ export function CastCrew({ credits }: CastCrewProps) {
       {topCast.length > 0 && (
         <div>
           <h2 className="mb-4 text-lg font-semibold">Cast</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+          <HorizontalScroll className="flex gap-3 overflow-x-auto pb-2">
             {topCast.map((member) => {
               const src = profileUrl(member.profile_path, "w185");
               return (
@@ -78,6 +79,34 @@ export function CastCrew({ credits }: CastCrewProps) {
                     <p className="text-[11px] leading-tight text-muted-foreground">
                       {member.character}
                     </p>
+                  </div>
+                </div>
+              );
+            })}
+          </HorizontalScroll>
+        </div>
+      )}
+
+      {directors.length > 0 && (
+        <div>
+          <h2 className="mb-4 text-lg font-semibold">Director{directors.length > 1 ? "s" : ""}</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {directors.map((director) => {
+              const src = profileUrl(director.profile_path, "w185");
+              return (
+                <div key={director.id} className="flex items-center gap-3 rounded-lg border border-border/50 p-3">
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
+                    {src ? (
+                      <Image src={src} alt={director.name} fill className="object-cover" sizes="48px" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <User className="h-5 w-5 text-muted-foreground/30" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{director.name}</p>
+                    <p className="text-xs text-muted-foreground">Director</p>
                   </div>
                 </div>
               );

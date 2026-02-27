@@ -11,8 +11,7 @@ import type { Provider } from "@supabase/supabase-js";
 
 const OAUTH_PROVIDERS: { id: Provider; label: string }[] = [
   { id: "google", label: "Google" },
-  { id: "github", label: "GitHub" },
-  { id: "discord", label: "Discord" },
+  { id: "facebook", label: "Facebook" },
 ];
 
 export default function AuthPage() {
@@ -20,6 +19,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, signInWithOAuth } = useAuth();
@@ -33,7 +33,7 @@ export default function AuthPage() {
       if (mode === "login") {
         await signIn(email, password);
       } else {
-        await signUp(email, password, username);
+        await signUp(email, password, username, name);
       }
       router.push("/");
     } catch (err) {
@@ -91,16 +91,28 @@ export default function AuthPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             {mode === "signup" && (
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="pl-9"
-                  required
-                />
-              </div>
+              <>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </>
             )}
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

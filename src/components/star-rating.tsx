@@ -28,7 +28,7 @@ export function StarRating({ label, value, onChange, readonly = false }: StarRat
               key={star}
               type="button"
               disabled={readonly}
-              onClick={() => onChange(star)}
+              onClick={() => onChange(star === value ? 0 : star)}
               onMouseEnter={() => !readonly && setHovered(star)}
               className={cn(
                 "p-0.5 transition-transform",

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { getNowPlayingMovies } from "@/lib/tmdb";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { getMovieRecommendations, getTopRatedMovies } from "@/lib/tmdb";
 import { MovieCard } from "./movie-card";
-import { useUninterested } from "@/hooks/use-uninterested";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { useCritiques } from "@/hooks/use-critiques";
 import { Button } from "./ui/button";
@@ -12,10 +11,9 @@ import { CritiqueDialog } from "./critique-dialog";
 import type { TMDBMovie } from "@/lib/types";
 import { toast } from "sonner";
 
-export function NowPlayingCarousel() {
+export function RecommendationsCarousel() {
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isUninterested } = useUninterested();
   const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
   const { critiques } = useCritiques();
   const [selected, setSelected] = useState<TMDBMovie | null>(null);
@@ -24,12 +22,58 @@ export function NowPlayingCarousel() {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  const movieCritiques = useMemo(
+    () =>
+      critiques
+        .filter((c) => c.mediaType === "movie")
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
+    [critiques]
+  );
+  const ratedIds = useMemo(() => new Set(movieCritiques.map((c) => c.movieId)), [movieCritiques]);
+
   useEffect(() => {
-    getNowPlayingMovies()
-      .then((data) => setMovies(data.results))
-      .catch(() => setMovies([]))
-      .finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const high8 = movieCritiques.filter((c) => c.score >= 80);
+        const high7 = movieCritiques.filter((c) => c.score >= 70);
+        const fallbackRated = [...movieCritiques].sort((a, b) => b.score - a.score).slice(0, 4);
+        const source = (high8.length >= 2 ? high8 : high7.length >= 2 ? high7 : fallbackRated).slice(0, 4);
+
+        if (source.length === 0) {
+          const topRated = await getTopRatedMovies();
+          if (!cancelled) {
+            setMovies(topRated.results.slice(0, 20));
+          }
+          return;
+        }
+
+        const responses = await Promise.all(source.map((c) => getMovieRecommendations(c.movieId)));
+        const byId = new Map<number, TMDBMovie>();
+        for (const res of responses) {
+          for (const m of res.results) {
+            if (!ratedIds.has(m.id) && !byId.has(m.id)) {
+              byId.set(m.id, m);
+            }
+          }
+        }
+        if (!cancelled) {
+          setMovies(Array.from(byId.values()).slice(0, 30));
+        }
+      } catch {
+        if (!cancelled) setMovies([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [movieCritiques, ratedIds]);
 
   const updateScrollButtons = useCallback(() => {
     const el = scrollRef.current;
@@ -58,9 +102,6 @@ export function NowPlayingCarousel() {
     el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
   }
 
-  const filtered = movies.filter((m) => !isUninterested(m.id, "movie"));
-  const ratedIds = new Set(critiques.filter((c) => c.mediaType === "movie").map((c) => c.movieId));
-
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -69,7 +110,7 @@ export function NowPlayingCarousel() {
     );
   }
 
-  if (filtered.length === 0) return null;
+  if (movies.length === 0) return <p className="text-sm text-muted-foreground">No recommendations yet.</p>;
 
   return (
     <div className="relative">
@@ -84,12 +125,8 @@ export function NowPlayingCarousel() {
         </Button>
       )}
 
-      <div
-        ref={scrollRef}
-        className="flex gap-3 overflow-x-auto pb-2 scroll-smooth"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {filtered.map((movie) => (
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: "none" }}>
+        {movies.map((movie) => (
           <div key={movie.id} className="w-[160px] shrink-0 sm:w-[180px]">
             <MovieCard
               movieId={movie.id}
@@ -97,7 +134,6 @@ export function NowPlayingCarousel() {
               posterPath={movie.poster_path}
               releaseYear={movie.release_date?.split("-")[0] ?? ""}
               href={`/movie/${movie.id}`}
-              onClick={() => {}}
               mediaType="movie"
               isInWatchlist={isInWatchlist(movie.id, "movie")}
               isRated={ratedIds.has(movie.id)}

@@ -38,6 +38,7 @@ export function CritiqueDialog({ movie, open, onOpenChange, mediaType = "movie" 
   const [ratings, setRatings] = useState<CritiqueRatings>(getEmptyRatings());
   const [isEditing, setIsEditing] = useState(false);
   const [existingCreatedAt, setExistingCreatedAt] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (movie && open) {
@@ -58,7 +59,6 @@ export function CritiqueDialog({ movie, open, onOpenChange, mediaType = "movie" 
   if (!movie) return null;
 
   const score = computeScore(ratings);
-  const allRated = Object.values(ratings).every((v) => v > 0);
   const src = posterUrl(movie.poster_path, "w342");
   const year = movie.release_date ? movie.release_date.split("-")[0] : "";
   const genres = getGenreNames(movie.genre_ids, mediaType);
@@ -67,10 +67,8 @@ export function CritiqueDialog({ movie, open, onOpenChange, mediaType = "movie" 
     setRatings((prev) => ({ ...prev, [dimension]: value }));
   }
 
-  const [error, setError] = useState<string | null>(null);
-
   async function handleSave() {
-    if (!allRated || !movie) return;
+    if (!movie) return;
     setError(null);
     const now = new Date().toISOString();
     try {
@@ -164,14 +162,8 @@ export function CritiqueDialog({ movie, open, onOpenChange, mediaType = "movie" 
           )}
           <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {allRated ? (
-              <>
-                <span className="text-sm text-muted-foreground">Score:</span>
-                <ScoreBadge score={score} size="lg" />
-              </>
-            ) : (
-              <span className="text-sm text-muted-foreground">Rate all dimensions to see your score</span>
-            )}
+            <span className="text-sm text-muted-foreground">Score:</span>
+            <ScoreBadge score={score} size="lg" />
           </div>
 
           <div className="flex items-center gap-2">
@@ -188,7 +180,6 @@ export function CritiqueDialog({ movie, open, onOpenChange, mediaType = "movie" 
             )}
             <Button
               onClick={handleSave}
-              disabled={!allRated}
               className="bg-amber-500 text-black hover:bg-amber-400"
             >
               {isEditing ? "Update" : "Save"} Critique

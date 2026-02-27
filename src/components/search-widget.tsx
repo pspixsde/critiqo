@@ -11,6 +11,15 @@ import { searchMulti } from "@/lib/tmdb";
 import { posterUrl } from "@/lib/tmdb";
 import { toMediaItem, type MediaItem } from "@/lib/types";
 
+function formatMediaYear(item: MediaItem): string {
+  const first = item.releaseDate?.split("-")[0] ?? "";
+  if (item.mediaType !== "tv") return first;
+  const last = item.lastAirDate?.split("-")[0] ?? "";
+  if (!first) return "";
+  if (!last || last === first) return `${first} - ...`;
+  return `${first} - ${last}`;
+}
+
 export function SearchWidget() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MediaItem[]>([]);
@@ -99,7 +108,7 @@ export function SearchWidget() {
           <div className="max-h-[400px] overflow-y-auto">
             {results.map((item) => {
               const src = posterUrl(item.posterPath, "w92");
-              const year = item.releaseDate?.split("-")[0] ?? "";
+              const year = formatMediaYear(item);
               const href = `/${item.mediaType}/${item.id}`;
 
               return (
