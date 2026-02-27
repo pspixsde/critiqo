@@ -9,16 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Film, Tv } from "lucide-react";
 import { searchMulti } from "@/lib/tmdb";
 import { posterUrl } from "@/lib/tmdb";
-import { toMediaItem, type MediaItem } from "@/lib/types";
-
-function formatMediaYear(item: MediaItem): string {
-  const first = item.releaseDate?.split("-")[0] ?? "";
-  if (item.mediaType !== "tv") return first;
-  const last = item.lastAirDate?.split("-")[0] ?? "";
-  if (!first) return "";
-  if (!last || last === first) return `${first} - ...`;
-  return `${first} - ${last}`;
-}
+import { toMediaItem, type MediaItem, formatMediaYear } from "@/lib/types";
 
 export function SearchWidget() {
   const [query, setQuery] = useState("");

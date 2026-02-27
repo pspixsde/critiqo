@@ -4,8 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { posterUrl } from "@/lib/tmdb";
 import { ScoreBadge } from "./score-badge";
-import { Badge } from "./ui/badge";
-import { Film, Tv, Bookmark, Star } from "lucide-react";
+import { Film, Bookmark, Star } from "lucide-react";
 
 interface MovieCardProps {
   movieId: number;
@@ -29,7 +28,6 @@ export function MovieCard({
   score,
   onClick,
   href,
-  mediaType,
   isInWatchlist,
   isRated,
   onWatchlistToggle,
@@ -58,14 +56,6 @@ export function MovieCard({
             <ScoreBadge score={score} size="sm" />
           </div>
         )}
-        {mediaType && (
-          <div className="absolute top-2 left-2">
-            <Badge variant="secondary" className="text-[10px] gap-0.5 px-1.5 py-0.5">
-              {mediaType === "tv" ? <Tv className="h-2.5 w-2.5" /> : <Film className="h-2.5 w-2.5" />}
-              {mediaType === "tv" ? "TV" : "Movie"}
-            </Badge>
-          </div>
-        )}
         {onWatchlistToggle && (
           <button
             type="button"
@@ -75,9 +65,9 @@ export function MovieCard({
               e.stopPropagation();
               onWatchlistToggle();
             }}
-            className="absolute left-2 top-2 z-10 rounded-full bg-black/35 p-1.5 text-white opacity-0 transition-opacity hover:bg-black/50 group-hover:opacity-100"
+            className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-md bg-black/35 text-white opacity-0 transition-opacity hover:bg-black/50 group-hover:opacity-100"
           >
-            <Bookmark className={`h-3.5 w-3.5 ${isInWatchlist ? "fill-current" : ""}`} />
+            <Bookmark className={`h-4.5 w-4.5 ${isInWatchlist ? "fill-current" : ""}`} />
           </button>
         )}
       </div>
@@ -94,9 +84,9 @@ export function MovieCard({
                 e.stopPropagation();
                 onRateClick();
               }}
-              className="rounded-full bg-black/35 p-1 text-white opacity-0 transition-opacity hover:bg-black/50 group-hover:opacity-100"
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-black/35 text-white opacity-0 transition-opacity hover:bg-black/50 group-hover:opacity-100"
             >
-              <Star className={`h-3 w-3 ${isRated ? "fill-current" : ""}`} />
+              <Star className={`h-4.5 w-4.5 ${isRated ? "fill-current" : ""}`} />
             </button>
           )}
         </div>

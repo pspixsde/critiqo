@@ -9,16 +9,16 @@ interface RatingsPieChartProps {
 }
 
 const COLORS = [
-  "#dc2626",
-  "#ef4444",
-  "#f97316",
-  "#fb923c",
-  "#facc15",
-  "#a3e635",
-  "#84cc16",
-  "#4ade80",
-  "#22c55e",
-  "#16a34a",
+  "#9f1239",
+  "#b91c1c",
+  "#c2410c",
+  "#b45309",
+  "#a16207",
+  "#a3820a",
+  "#4d7c0f",
+  "#15803d",
+  "#047857",
+  "#065f46",
 ];
 
 export function RatingsPieChart({ critiques }: RatingsPieChartProps) {
@@ -48,7 +48,7 @@ export function RatingsPieChart({ critiques }: RatingsPieChartProps) {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ background: "#111", border: "1px solid #333" }}
+              contentStyle={{ background: "#111", border: "1px solid #333", color: "#e5e5e5" }}
               formatter={(value, _name, item) => {
                 const safeValue = Number(value ?? 0);
                 const bucket = item.payload.name;
