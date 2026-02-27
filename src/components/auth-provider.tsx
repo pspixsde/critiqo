@@ -72,23 +72,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUser = sessionData.session?.user ?? null;
+      const [{ data: userData, error }, { data: sessionData }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.auth.getSession(),
+      ]);
+      const currentUser = error ? null : userData.user;
       setSession(sessionData.session);
       setUser(currentUser);
       if (currentUser) await ensureProfile(supabase, currentUser);
       setLoading(false);
 
       const { data: authListener } = supabase.auth.onAuthStateChange(
-        async (_event: AuthChangeEvent, newSession: Session | null) => {
+        async (event: AuthChangeEvent, newSession: Session | null) => {
           setSession(newSession);
           const u = newSession?.user ?? null;
           setUser(u);
-          if (u) await ensureProfile(supabase, u);
+
+          if (event === "SIGNED_OUT") {
+            setUser(null);
+            setSession(null);
+            setLoading(false);
+            return;
+          }
+
+          if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "USER_UPDATED") {
+            const { data: refreshed, error: refreshError } = await supabase.auth.getUser();
+            if (refreshError) {
+              setUser(null);
+              setSession(null);
+              setLoading(false);
+              return;
+            }
+            setUser(refreshed.user);
+            if (refreshed.user) await ensureProfile(supabase, refreshed.user);
+          } else if (u) {
+            await ensureProfile(supabase, u);
+          }
+
           setLoading(false);
         }
       );
       subscription = authListener.subscription;
+
+      const handleVisibilityChange = async () => {
+        if (document.visibilityState !== "visible") return;
+        const { data: refreshed, error: refreshError } = await supabase.auth.getUser();
+        if (refreshError) {
+          setUser(null);
+          setSession(null);
+          return;
+        }
+        setUser(refreshed.user);
+        const { data: latestSession } = await supabase.auth.getSession();
+        setSession(latestSession.session);
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      subscription = {
+        unsubscribe: () => {
+          authListener.subscription.unsubscribe();
+          document.removeEventListener("visibilitychange", handleVisibilityChange);
+        },
+      };
     }
 
     init();

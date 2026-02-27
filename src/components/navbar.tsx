@@ -3,16 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, User, LogOut, LogIn, Search } from "lucide-react";
+import { Film, User, LogOut, LogIn, Search, ListVideo, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./auth-provider";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SearchWidget } from "./search-widget";
 
 const NAV_ITEMS = [
   { href: "/", label: "Explore", icon: Film },
-  { href: "/profile", label: "Profile", icon: User, auth: true },
 ];
 
 export function Navbar() {
@@ -62,23 +61,53 @@ export function Navbar() {
           {!loading && (
             <>
               {user ? (
-                <div className="ml-2 flex items-center gap-2">
-                  <Avatar className="h-7 w-7">
-                    <AvatarFallback className="bg-amber-500/15 text-amber-500 text-xs">
-                      {user.user_metadata?.name?.[0]?.toUpperCase() ??
-                        user.user_metadata?.username?.[0]?.toUpperCase() ??
-                        user.email?.[0]?.toUpperCase() ??
-                        "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => signOut()}
-                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                <div className="group relative ml-2">
+                  <button
+                    type="button"
+                    className="rounded-full outline-none ring-offset-background transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label="Open account menu"
                   >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.user_metadata?.avatar_url || undefined} alt="Profile" />
+                      <AvatarFallback className="bg-amber-500/15 text-amber-500 text-xs">
+                        {user.user_metadata?.name?.[0]?.toUpperCase() ??
+                          user.user_metadata?.username?.[0]?.toUpperCase() ??
+                          user.email?.[0]?.toUpperCase() ??
+                          "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                  <div className="absolute right-0 top-full z-50 mt-2 hidden min-w-44 flex-col overflow-hidden rounded-md border border-border/60 bg-popover shadow-lg group-hover:flex group-focus-within:flex">
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                    >
+                      <User className="h-4 w-4" />
+                      Profile
+                    </Link>
+                    <Link
+                      href="/lists"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                    >
+                      <ListVideo className="h-4 w-4" />
+                      Lists
+                    </Link>
+                    <Link
+                      href="/account?tab=settings"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => signOut()}
+                      className="flex items-center gap-2 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log Out
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <Link

@@ -187,6 +187,15 @@ export function toMediaItem(result: TMDBMultiSearchResult): MediaItem | null {
   };
 }
 
+export function formatMediaYear(item: MediaItem): string {
+  const first = item.releaseDate?.split("-")[0] ?? "";
+  if (item.mediaType !== "tv") return first;
+  if (!first) return "";
+  const last = item.lastAirDate?.split("-")[0] ?? "";
+  if (!last || last === first) return first;
+  return `${first} - ${last}`;
+}
+
 // ─── Genre Maps ──────────────────────────────────────────────
 
 export const TMDB_GENRE_MAP: Record<number, string> = {

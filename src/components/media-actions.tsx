@@ -8,7 +8,8 @@ import { useAuth } from "./auth-provider";
 import { useCritiques } from "@/hooks/use-critiques";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { useUninterested } from "@/hooks/use-uninterested";
-import { Star, Bookmark, BookmarkCheck, EyeOff, LogIn } from "lucide-react";
+import { useCustomLists } from "@/hooks/use-custom-lists";
+import { Star, Bookmark, BookmarkCheck, EyeOff, LogIn, ListPlus, Check } from "lucide-react";
 import type { TMDBMovie } from "@/lib/types";
 import { getErrorMessage } from "@/lib/utils";
 import Link from "next/link";
@@ -26,15 +27,25 @@ export function MediaActions({ media, mediaType, title, posterPath }: MediaActio
   const { getCritique } = useCritiques();
   const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
   const { isUninterested, markUninterested, removeUninterested } = useUninterested();
+  const { lists, createList, getListsContainingMedia, addToList, removeFromList } = useCustomLists();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [score, setScore] = useState<number | undefined>(undefined);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [listMenuOpen, setListMenuOpen] = useState(false);
+  const [activeListIds, setActiveListIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     getCritique(media.id, mediaType).then((c) => {
       if (c) setScore(c.score);
     });
   }, [media.id, mediaType, getCritique]);
+
+  useEffect(() => {
+    if (!listMenuOpen || !user) return;
+    getListsContainingMedia(media.id, mediaType)
+      .then((ids) => setActiveListIds(ids))
+      .catch((error) => setActionError(getErrorMessage(error)));
+  }, [listMenuOpen, user, media.id, mediaType, getListsContainingMedia]);
 
   const inWatchlist = isInWatchlist(media.id, mediaType);
   const uninterested = isUninterested(media.id, mediaType);
@@ -96,6 +107,77 @@ export function MediaActions({ media, mediaType, title, posterPath }: MediaActio
         )}
         {inWatchlist ? "In Watchlist" : "Watchlist"}
       </Button>
+
+      <div className="relative">
+        <Button variant="outline" className="gap-2" onClick={() => setListMenuOpen((v) => !v)}>
+          <ListPlus className="h-4 w-4" />
+          Add to List
+        </Button>
+        {listMenuOpen && (
+          <div className="absolute left-0 top-full z-20 mt-2 w-60 rounded-md border border-border/50 bg-popover p-2 shadow-xl">
+            <div className="max-h-56 overflow-auto">
+              {lists.map((list) => {
+                const inList = activeListIds.has(list.id);
+                return (
+                  <button
+                    type="button"
+                    key={list.id}
+                    className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                    onClick={async () => {
+                      try {
+                        if (inList) {
+                          await removeFromList(list.id, media.id, mediaType);
+                          const next = new Set(activeListIds);
+                          next.delete(list.id);
+                          setActiveListIds(next);
+                          toast.success(`Removed from ${list.name}`);
+                        } else {
+                          await addToList(list.id, {
+                            mediaId: media.id,
+                            mediaType,
+                            title,
+                            posterPath,
+                          });
+                          const next = new Set(activeListIds);
+                          next.add(list.id);
+                          setActiveListIds(next);
+                          toast.success(`Added to ${list.name}`);
+                        }
+                      } catch (error) {
+                        setActionError(getErrorMessage(error));
+                      }
+                    }}
+                  >
+                    <span className="truncate">{list.name}</span>
+                    {inList && <Check className="h-4 w-4 text-amber-500" />}
+                  </button>
+                );
+              })}
+              {lists.length === 0 && (
+                <p className="px-2 py-2 text-xs text-muted-foreground">No custom lists yet</p>
+              )}
+            </div>
+            <div className="mt-2 border-t border-border/50 pt-2">
+              <button
+                type="button"
+                className="w-full rounded-sm px-2 py-1.5 text-left text-sm text-amber-500 hover:bg-accent"
+                onClick={async () => {
+                  const name = window.prompt("Enter list name");
+                  if (!name) return;
+                  try {
+                    await createList(name);
+                    toast.success("List created");
+                  } catch (error) {
+                    setActionError(getErrorMessage(error));
+                  }
+                }}
+              >
+                + Create New List
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <Button
         variant={uninterested ? "outline" : "ghost"}

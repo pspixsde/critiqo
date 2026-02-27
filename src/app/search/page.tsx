@@ -3,19 +3,10 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { searchMulti } from "@/lib/tmdb";
-import { toMediaItem, type MediaItem } from "@/lib/types";
+import { toMediaItem, type MediaItem, formatMediaYear } from "@/lib/types";
 import { MovieCard } from "@/components/movie-card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
-
-function formatMediaYear(item: MediaItem): string {
-  const first = item.releaseDate?.split("-")[0] ?? "";
-  if (item.mediaType !== "tv") return first;
-  const last = item.lastAirDate?.split("-")[0] ?? "";
-  if (!first) return "";
-  if (!last || last === first) return `${first} - ...`;
-  return `${first} - ${last}`;
-}
 
 function SearchResults() {
   const searchParams = useSearchParams();
