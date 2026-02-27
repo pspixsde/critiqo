@@ -8,6 +8,15 @@ import { MovieCard } from "@/components/movie-card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search } from "lucide-react";
 
+function formatMediaYear(item: MediaItem): string {
+  const first = item.releaseDate?.split("-")[0] ?? "";
+  if (item.mediaType !== "tv") return first;
+  const last = item.lastAirDate?.split("-")[0] ?? "";
+  if (!first) return "";
+  if (!last || last === first) return `${first} - ...`;
+  return `${first} - ${last}`;
+}
+
 function SearchResults() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") ?? "";
@@ -72,7 +81,7 @@ function SearchResults() {
               movieId={item.id}
               title={item.title}
               posterPath={item.posterPath}
-              releaseYear={item.releaseDate?.split("-")[0] ?? ""}
+              releaseYear={formatMediaYear(item)}
               href={`/${item.mediaType}/${item.id}`}
               mediaType={item.mediaType}
               onClick={() => {}}
@@ -106,7 +115,7 @@ function SearchResults() {
 
 export default function SearchPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl animate-in fade-in duration-300 px-4 py-8">
       <Suspense
         fallback={
           <div className="flex justify-center py-20">

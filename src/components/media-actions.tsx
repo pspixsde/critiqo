@@ -12,6 +12,7 @@ import { Star, Bookmark, BookmarkCheck, EyeOff, LogIn } from "lucide-react";
 import type { TMDBMovie } from "@/lib/types";
 import { getErrorMessage } from "@/lib/utils";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface MediaActionsProps {
   media: TMDBMovie;
@@ -21,7 +22,7 @@ interface MediaActionsProps {
 }
 
 export function MediaActions({ media, mediaType, title, posterPath }: MediaActionsProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { getCritique } = useCritiques();
   const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
   const { isUninterested, markUninterested, removeUninterested } = useUninterested();
@@ -37,6 +38,10 @@ export function MediaActions({ media, mediaType, title, posterPath }: MediaActio
 
   const inWatchlist = isInWatchlist(media.id, mediaType);
   const uninterested = isUninterested(media.id, mediaType);
+
+  if (loading) {
+    return <div className="h-10 w-44 animate-pulse rounded-md bg-muted" />;
+  }
 
   if (!user) {
     return (
@@ -73,8 +78,10 @@ export function MediaActions({ media, mediaType, title, posterPath }: MediaActio
           try {
             if (inWatchlist) {
               await removeFromWatchlist(media.id, mediaType);
+              toast.success("Removed from Watchlist");
             } else {
               await addToWatchlist({ mediaId: media.id, mediaType, title, posterPath });
+              toast.success("Added to Watchlist");
             }
           } catch (e) {
             console.error("Watchlist error:", e);
@@ -91,15 +98,21 @@ export function MediaActions({ media, mediaType, title, posterPath }: MediaActio
       </Button>
 
       <Button
-        variant="ghost"
-        className="gap-2 text-muted-foreground"
+        variant={uninterested ? "outline" : "ghost"}
+        className={
+          uninterested
+            ? "gap-2 border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+            : "gap-2 text-muted-foreground"
+        }
         onClick={async () => {
           setActionError(null);
           try {
             if (uninterested) {
               await removeUninterested(media.id, mediaType);
+              toast.success("Removed from Uninterested");
             } else {
-              await markUninterested(media.id, mediaType);
+              await markUninterested(media.id, mediaType, title, posterPath);
+              toast.success("Marked as Uninterested");
             }
           } catch (e) {
             console.error("Uninterested error:", e);

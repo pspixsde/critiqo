@@ -15,7 +15,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithOAuth: (provider: Provider) => Promise<void>;
   signOut: () => Promise<void>;
@@ -48,6 +48,11 @@ async function ensureProfile(
         user.user_metadata?.username ??
         user.email?.split("@")[0] ??
         "user",
+      display_name:
+        user.user_metadata?.name ??
+        user.user_metadata?.username ??
+        user.email?.split("@")[0] ??
+        "Critic",
     });
   }
 }
@@ -94,13 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(
-    async (email: string, password: string, username: string) => {
+    async (email: string, password: string, username: string, name: string) => {
       const supabase = getSupabaseClient();
       if (!supabase) throw new Error("Supabase not configured");
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { username } },
+        options: { data: { username, name } },
       });
       if (error) throw error;
     },

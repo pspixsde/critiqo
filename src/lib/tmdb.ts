@@ -3,6 +3,7 @@ import type {
   TMDBMovieDetails,
   TMDBCredits,
   TMDBTVDetails,
+  TMDBSeasonDetails,
   TMDBMultiSearchResponse,
 } from "./types";
 
@@ -48,6 +49,24 @@ export async function getNowPlayingMovies(page = 1): Promise<TMDBSearchResponse>
   });
 }
 
+export async function getMovieRecommendations(id: number, page = 1): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>(`/movie/${id}/recommendations`, {
+    page: String(page),
+  });
+}
+
+export async function getMovieSimilar(id: number, page = 1): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>(`/movie/${id}/similar`, {
+    page: String(page),
+  });
+}
+
+export async function getTopRatedMovies(page = 1): Promise<TMDBSearchResponse> {
+  return tmdbFetch<TMDBSearchResponse>("/movie/top_rated", {
+    page: String(page),
+  });
+}
+
 // ─── TV endpoints ────────────────────────────────────────────
 
 export async function getTVDetails(id: number): Promise<TMDBTVDetails> {
@@ -60,6 +79,10 @@ export async function getTVCredits(id: number): Promise<TMDBCredits> {
 
 export async function getOnTheAirTV(page = 1): Promise<{ page: number; results: import("./types").TMDBTVShow[]; total_pages: number; total_results: number }> {
   return tmdbFetch("/tv/on_the_air", { page: String(page) });
+}
+
+export async function getTVSeasonDetails(tvId: number, seasonNumber: number): Promise<TMDBSeasonDetails> {
+  return tmdbFetch<TMDBSeasonDetails>(`/tv/${tvId}/season/${seasonNumber}`);
 }
 
 // ─── Multi-search ────────────────────────────────────────────

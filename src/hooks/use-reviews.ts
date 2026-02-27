@@ -15,14 +15,13 @@ export function useReviews(mediaId: number, mediaType: "movie" | "tv") {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
 
     async function load() {
       const supabase = createClient();
 
       const { data: reviewRows, error: reviewError } = await supabase
         .from("reviews")
-        .select("*, profiles(username, avatar_url)")
+        .select("*, profiles(username, display_name, avatar_url)")
         .eq("media_id", mediaId)
         .eq("media_type", mediaType);
 
@@ -40,7 +39,7 @@ export function useReviews(mediaId: number, mediaType: "movie" | "tv") {
       const rows = reviewRows as Record<string, unknown>[];
       const reviewIds = rows.map((r) => r.id as string);
 
-      let votesMap: Record<string, { helpful: number; unhelpful: number; userVote: 1 | -1 | null }> = {};
+      const votesMap: Record<string, { helpful: number; unhelpful: number; userVote: 1 | -1 | null }> = {};
 
       if (reviewIds.length > 0) {
         const { data: voteRows } = await supabase
@@ -62,12 +61,12 @@ export function useReviews(mediaId: number, mediaType: "movie" | "tv") {
 
       if (!cancelled) {
         const mapped: Review[] = rows.map((r) => {
-          const profile = r.profiles as { username: string; avatar_url: string | null } | null;
+          const profile = r.profiles as { username: string; display_name?: string; avatar_url: string | null } | null;
           const votes = votesMap[r.id as string] ?? { helpful: 0, unhelpful: 0, userVote: null };
           return {
             id: r.id as string,
             userId: r.user_id as string,
-            username: profile?.username ?? "Anonymous",
+            username: profile?.display_name ?? profile?.username ?? "Anonymous",
             avatarUrl: profile?.avatar_url ?? null,
             mediaId: r.media_id as number,
             mediaType: r.media_type as "movie" | "tv",

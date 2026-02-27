@@ -6,13 +6,14 @@ import type { Critique } from "@/lib/types";
 import { useAuth } from "@/components/auth-provider";
 
 export function useCritiques() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [critiques, setCritiques] = useState<Critique[]>([]);
   const [version, setVersion] = useState(0);
 
   const store = user ? getSupabaseCritiqueStore() : localCritiqueStore;
 
   useEffect(() => {
+    if (loading) return;
     let cancelled = false;
     store
       .getAll()
@@ -25,29 +26,32 @@ export function useCritiques() {
     return () => {
       cancelled = true;
     };
-  }, [store, version]);
+  }, [store, version, loading]);
 
   const saveCritique = useCallback(
     async (critique: Critique) => {
+      if (loading) return;
       await store.save(critique);
       setVersion((v) => v + 1);
     },
-    [store]
+    [store, loading]
   );
 
   const deleteCritique = useCallback(
     async (movieId: number, mediaType = "movie") => {
+      if (loading) return;
       await store.delete(movieId, mediaType);
       setVersion((v) => v + 1);
     },
-    [store]
+    [store, loading]
   );
 
   const getCritique = useCallback(
     async (movieId: number, mediaType = "movie") => {
+      if (loading) return null;
       return store.getByMovieId(movieId, mediaType);
     },
-    [store]
+    [store, loading]
   );
 
   return {

@@ -7,6 +7,7 @@ import { Calendar, Layers } from "lucide-react";
 import { MediaActions } from "@/components/media-actions";
 import { CastCrew } from "@/components/cast-crew";
 import { ReviewSection } from "@/components/review-section";
+import { TVSeasonsInfo } from "@/components/tv-seasons-info";
 import type { TMDBMovie } from "@/lib/types";
 
 export default async function TVPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +27,15 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
 
   const backdrop = backdropUrl(show.backdrop_path, "w1280");
   const poster = posterUrl(show.poster_path, "w500");
-  const year = show.first_air_date?.split("-")[0] ?? "";
+  const firstYear = show.first_air_date?.split("-")[0] ?? "";
+  const lastYear = show.last_air_date?.split("-")[0] ?? "";
+  const yearRange = firstYear
+    ? show.status === "Returning Series"
+      ? `${firstYear} - ...`
+      : lastYear && lastYear !== firstYear
+        ? `${firstYear} - ${lastYear}`
+        : firstYear
+    : "";
 
   const tmdbMovie: TMDBMovie = {
     id: show.id,
@@ -74,10 +83,10 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
                 <p className="text-sm italic text-muted-foreground">{show.tagline}</p>
               )}
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                {year && (
+                {yearRange && (
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />
-                    {year}
+                    {yearRange}
                   </span>
                 )}
                 <span className="flex items-center gap-1">
@@ -100,7 +109,7 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
       </div>
 
       {/* Body */}
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto max-w-5xl animate-in fade-in duration-300 px-4 py-8">
         <MediaActions
           media={tmdbMovie}
           mediaType="tv"
@@ -114,6 +123,10 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
             <p className="leading-relaxed text-muted-foreground">{show.overview}</p>
           </div>
         )}
+
+        <Separator className="my-8" />
+
+        <TVSeasonsInfo tvId={show.id} seasons={show.seasons} />
 
         <Separator className="my-8" />
 

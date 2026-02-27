@@ -100,7 +100,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* Body */}
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mx-auto max-w-5xl animate-in fade-in duration-300 px-4 py-8">
         <MediaActions
           media={tmdbMovie}
           mediaType="movie"

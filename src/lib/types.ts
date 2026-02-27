@@ -63,6 +63,7 @@ export interface TMDBTVShow {
   poster_path: string | null;
   backdrop_path: string | null;
   first_air_date: string;
+  last_air_date?: string;
   genre_ids: number[];
   vote_average: number;
   vote_count: number;
@@ -85,6 +86,21 @@ export interface TMDBTVDetails extends Omit<TMDBTVShow, "genre_ids"> {
     poster_path: string | null;
     air_date: string | null;
   }[];
+}
+
+export interface TMDBEpisode {
+  id: number;
+  name: string;
+  episode_number: number;
+  air_date: string | null;
+}
+
+export interface TMDBSeasonDetails {
+  id: number;
+  name: string;
+  season_number: number;
+  air_date: string | null;
+  episodes: TMDBEpisode[];
 }
 
 // ─── TMDB Multi-Search Types ─────────────────────────────────
@@ -135,6 +151,7 @@ export interface MediaItem {
   voteAverage: number;
   voteCount: number;
   popularity: number;
+  lastAirDate?: string;
 }
 
 export function toMediaItem(result: TMDBMultiSearchResult): MediaItem | null {
@@ -166,6 +183,7 @@ export function toMediaItem(result: TMDBMultiSearchResult): MediaItem | null {
     voteAverage: result.vote_average,
     voteCount: result.vote_count,
     popularity: result.popularity,
+    lastAirDate: result.last_air_date,
   };
 }
 

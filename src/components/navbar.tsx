@@ -1,31 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Search, User, LogOut, LogIn } from "lucide-react";
+import { Film, User, LogOut, LogIn, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./auth-provider";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SearchWidget } from "./search-widget";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Search", icon: Search },
+  { href: "/", label: "Explore", icon: Film },
   { href: "/profile", label: "Profile", icon: User, auth: true },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, signOut, loading } = useAuth();
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
-      <nav className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+      <nav className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
           <Film className="h-5 w-5 text-amber-500" />
           <span>Critiqo</span>
         </Link>
 
-        <div className="flex items-center gap-1">
+        <div className="hidden min-w-0 flex-1 md:block">
+          <SearchWidget />
+        </div>
+
+        <div className="ml-auto flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 md:hidden"
+            onClick={() => setMobileSearchOpen((v) => !v)}
+            aria-label="Toggle search"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
           {NAV_ITEMS.filter((item) => !item.auth || user).map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
@@ -48,7 +65,8 @@ export function Navbar() {
                 <div className="ml-2 flex items-center gap-2">
                   <Avatar className="h-7 w-7">
                     <AvatarFallback className="bg-amber-500/15 text-amber-500 text-xs">
-                      {user.user_metadata?.username?.[0]?.toUpperCase() ??
+                      {user.user_metadata?.name?.[0]?.toUpperCase() ??
+                        user.user_metadata?.username?.[0]?.toUpperCase() ??
                         user.email?.[0]?.toUpperCase() ??
                         "U"}
                     </AvatarFallback>
@@ -80,6 +98,12 @@ export function Navbar() {
           )}
         </div>
       </nav>
+
+      {mobileSearchOpen && (
+        <div className="border-t border-border/40 px-4 py-3 md:hidden">
+          <SearchWidget />
+        </div>
+      )}
     </header>
   );
 }
